@@ -33,6 +33,8 @@ public class PlayerManager : NetworkBehaviour
     public int playerMana = 0;
     public int enemyMana = 0;
 
+    public bool shieldsDealt = false;
+
     private List<GameObject> cards = new List<GameObject>();
     private List<GameObject> inBattle = new List<GameObject>();
 
@@ -86,13 +88,19 @@ public class PlayerManager : NetworkBehaviour
 
     [Command]
     public void CmdDealCards()
-    {
-        for (int i = 0; i < 5; i++)
+    {   
+
+        if (!shieldsDealt)
         {
-            GameObject card = Instantiate(cards[Random.Range(0, cards.Count)], new Vector2(0, 0), Quaternion.identity);
-            NetworkServer.Spawn(card, connectionToClient);
-            RpcShowCard(card, "Shields");
+            for (int i = 0; i < 5; i++)
+            {
+                GameObject card = Instantiate(cards[Random.Range(0, cards.Count)], new Vector2(0, 0), Quaternion.identity);
+                NetworkServer.Spawn(card, connectionToClient);
+                RpcShowCard(card, "Shields");
+            }
+            shieldsDealt = true;
         }
+        
 
         for (int i = 0; i < 5; i++)
         {
@@ -156,8 +164,8 @@ public class PlayerManager : NetworkBehaviour
                 card.GetComponent<CardFlipper>().Flip();
             }
             CardsPlayed++;
-            PlayerManager pm = NetworkClient.connection.identity.GetComponent<PlayerManager>();
-            pm.IsMyTurn = !pm.IsMyTurn;
+           // PlayerManager pm = NetworkClient.connection.identity.GetComponent<PlayerManager>();
+           // pm.IsMyTurn = !pm.IsMyTurn;
         }
         else if (type == "Mana")
         {
@@ -180,7 +188,7 @@ public class PlayerManager : NetworkBehaviour
             if (hasAuthority)
             {
                 card.transform.SetParent(PlayerBattleZone.transform, false);
-
+                CmdGMCardPlayed();
             }
             else
             {
@@ -189,6 +197,8 @@ public class PlayerManager : NetworkBehaviour
 
 
         }
+        PlayerManager pm = NetworkClient.connection.identity.GetComponent<PlayerManager>();
+        pm.IsMyTurn = !pm.IsMyTurn;
     }
 
     [Command]
