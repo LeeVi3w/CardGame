@@ -21,13 +21,20 @@ public class PlayerManager : NetworkBehaviour
     public GameObject EnemySlot5;
     public GameObject PlayerYard;
     public GameObject EnemyYard;
+    public GameObject EnemyBattleZone;
+    public GameObject PlayerBattleZone;
+    public GameObject PlayerManaZone;
+    public GameObject EnemyManaZone;
     public List<GameObject> PlayerSockets = new List<GameObject>();
     public List<GameObject> EnemySockets = new List<GameObject>();
 
     public int CardsPlayed = 0;
     public bool IsMyTurn = false;
+    public int playerMana = 0;
+    public int enemyMana = 0;
 
     private List<GameObject> cards = new List<GameObject>();
+    private List<GameObject> inBattle = new List<GameObject>();
 
     public override void OnStartClient()
     {
@@ -38,6 +45,10 @@ public class PlayerManager : NetworkBehaviour
         EnemyArea = GameObject.Find("EnemyArea");
         PlayerYard = GameObject.Find("PlayerYard");
         EnemyYard = GameObject.Find("EnemyYard");
+        EnemyBattleZone = GameObject.Find("EnemyBattlezone");
+        PlayerBattleZone = GameObject.Find("PlayerBattlezone");
+        PlayerManaZone = GameObject.Find("PlayerMana");
+        EnemyManaZone = GameObject.Find("EnemyMana");
 
         PlayerSlot1 = GameObject.Find("PlayerSlot1");
         PlayerSlot2 = GameObject.Find("PlayerSlot2");
@@ -80,32 +91,45 @@ public class PlayerManager : NetworkBehaviour
         {
             GameObject card = Instantiate(cards[Random.Range(0, cards.Count)], new Vector2(0, 0), Quaternion.identity);
             NetworkServer.Spawn(card, connectionToClient);
-            RpcShowCard(card, "Dealt");
+            RpcShowCard(card, "Shields");
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            GameObject card = Instantiate(cards[Random.Range(0, cards.Count)], new Vector2(0, 0), Quaternion.identity);
+            NetworkServer.Spawn(card, connectionToClient);
+            RpcShowCard(card, "Hand");
         }
         RpcGMChangeState("Compile {}");
     }
 
-    public void PlayCard(GameObject card)
+    //TODO BattleZone or ManaZone from hand
+    public void PlayCard(GameObject card, string zone)
     {
         card.GetComponent<CardAbilities>().OnCompile();
-        CmdPlayCard(card);
+        if (zone == "Battle") { inBattle.Add(card); }
+        
+        CmdPlayCard(card, zone);
     }
 
     [Command]
-    void CmdPlayCard(GameObject card)
+    void CmdPlayCard(GameObject card, string zone)
     {
-        RpcShowCard(card, "Played");
+   
+        RpcShowCard(card, zone);
     }
 
     [ClientRpc]
     void RpcShowCard(GameObject card, string type)
     {
-        if (type == "Dealt")
+        //TODO Show in battlefield
+        if (type == "Hand")
         {
             if (hasAuthority)
             {
                 card.transform.SetParent(PlayerArea.transform, false);
                 card.GetComponent<CardFlipper>().SetSprite("cyan");
+
             }
             else
             {
@@ -114,7 +138,7 @@ public class PlayerManager : NetworkBehaviour
                 card.GetComponent<CardFlipper>().Flip();
             }
         }
-        else if (type == "Played")
+        else if (type == "Shields")
         {
             if (CardsPlayed == 5)
             {
@@ -123,16 +147,37 @@ public class PlayerManager : NetworkBehaviour
             if (hasAuthority)
             {
                 card.transform.SetParent(PlayerSockets[CardsPlayed].transform, false);
-                CmdGMCardPlayed();
+                card.GetComponent<CardFlipper>().SetSprite("cyan");
+                card.GetComponent<CardFlipper>().Flip();
             }
             if (!hasAuthority)
             {
                 card.transform.SetParent(EnemySockets[CardsPlayed].transform, false);
+                card.GetComponent<CardFlipper>().SetSprite("magenta");
                 card.GetComponent<CardFlipper>().Flip();
             }
             CardsPlayed++;
             PlayerManager pm = NetworkClient.connection.identity.GetComponent<PlayerManager>();
             pm.IsMyTurn = !pm.IsMyTurn;
+        }
+        else if (type == "Mana")
+        {
+            if (hasAuthority)
+            {
+                playerMana++;
+
+            }
+            else
+            {
+                enemyMana++;
+            }
+        }
+        else if (type == "Battle")
+        {
+            //TODO BATTLEZONE
+            card.transform.SetParent(PlayerBattleZone.transform, false);
+
+
         }
     }
 

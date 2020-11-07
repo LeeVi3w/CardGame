@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
+using UnityEditor;
 
 public class DragDrop : NetworkBehaviour
 {
@@ -10,9 +11,11 @@ public class DragDrop : NetworkBehaviour
     public PlayerManager PlayerManager;
 
     private bool isDragging = false;
-    private bool isOverDropZone = false;
+    private bool isOverBattleZone = false;
+    private bool isOverManaZone = false;
     private bool isDraggable = true;
-    private GameObject dropZone;
+    private GameObject battleZone;
+    private GameObject manaZone;
     private GameObject startParent;
     private Vector2 startPosition;
 
@@ -39,17 +42,42 @@ public class DragDrop : NetworkBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject == PlayerManager.PlayerSockets[PlayerManager.CardsPlayed])
+        //TODO ENTER BATTLEGROUND (Now it checks collision with shields)
+        if (startParent == PlayerManager.PlayerArea)
         {
-            isOverDropZone = true;
-            dropZone = collision.gameObject;
+            //Modify 
+            if (collision.gameObject == PlayerManager.PlayerBattleZone)
+            {
+                isOverBattleZone = true;
+                battleZone = collision.gameObject;
+
+            }
+
+            if (collision.gameObject == PlayerManager.PlayerManaZone)
+            {
+                isOverManaZone = true;
+                manaZone = collision.gameObject;
+
+            }
         }
+        //TODO ATTACK
+        /*if (startParent == PlayerManager.PlayerBattleArea) 
+        {
+            if (collision.gameObject == PlayerManager.PlayerSockets[PlayerManager.CardsPlayed])
+            {
+                isOverBattleZone = true;
+                battleZone = collision.gameObject;
+
+            }
+        }*/
+        
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        isOverDropZone = false;
-        dropZone = null;
+        isOverBattleZone = false;
+        battleZone = null;
+        manaZone = null;
     }
 
     public void StartDrag()
@@ -65,12 +93,18 @@ public class DragDrop : NetworkBehaviour
         if (!isDraggable) return;
         isDragging = false;
 
-        if (isOverDropZone && PlayerManager.IsMyTurn)
+        if (isOverBattleZone && PlayerManager.IsMyTurn)
         {
-            transform.SetParent(dropZone.transform, false);
+            transform.SetParent(battleZone.transform, false);
             isDraggable = false;
-            PlayerManager.PlayCard(gameObject);
+            PlayerManager.PlayCard(gameObject, "Battle");
         }
+        else if (isOverManaZone && PlayerManager.IsMyTurn)
+        {
+            transform.SetParent(manaZone.transform, false);
+            isDraggable = false;
+            PlayerManager.PlayCard(gameObject, "Mana");
+        } 
         else
         {
             transform.position = startPosition;
