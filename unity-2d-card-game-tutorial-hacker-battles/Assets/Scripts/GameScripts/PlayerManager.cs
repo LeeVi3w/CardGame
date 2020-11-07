@@ -114,8 +114,7 @@ public class PlayerManager : NetworkBehaviour
 
     [Command]
     void CmdPlayCard(GameObject card, string zone)
-    {
-   
+    {   
         RpcShowCard(card, zone);
     }
 
@@ -165,17 +164,28 @@ public class PlayerManager : NetworkBehaviour
             if (hasAuthority)
             {
                 playerMana++;
+                card.transform.SetParent(PlayerManaZone.transform, false);
 
             }
             else
             {
                 enemyMana++;
+                card.transform.SetParent(EnemyManaZone.transform, false);
             }
         }
         else if (type == "Battle")
         {
             //TODO BATTLEZONE
-            card.transform.SetParent(PlayerBattleZone.transform, false);
+            
+            if (hasAuthority)
+            {
+                card.transform.SetParent(PlayerBattleZone.transform, false);
+
+            }
+            else
+            {
+                card.transform.SetParent(EnemyBattleZone.transform, false);
+            }
 
 
         }
