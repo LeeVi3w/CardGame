@@ -76,6 +76,7 @@ public class DragDrop : NetworkBehaviour
     private void OnCollisionExit2D(Collision2D collision)
     {
         isOverBattleZone = false;
+        isOverManaZone = false;
         battleZone = null;
         manaZone = null;
     }
